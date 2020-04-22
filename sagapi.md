@@ -77,17 +77,11 @@ method: post
 ##### 查询二维码
 
 ```
-url:/api/v1/order/getQrCodeByOrderId
-metod：post 
+url:/api/v1/order/getQrCodeByOrderId/{orderId}
+metod：get 
 ```
 
 - ##### 请求
-
-```
-{
-    orderId: "4c9e3211-3059-4de1-ab9a-d0fc82733c7"
-}
-```
 
 | Field_Name | Type   | Description |
 | ---------- | ------ | ----------- |
@@ -111,21 +105,15 @@ metod：post
 ##### 获取二维码参数数据
 
 ```
-url:/api/v1/order/getQrCodeDataByQrCodeId
-metod：post
+url:/api/v1/order/getQrCodeDataByQrCodeId/{qrCodeId}
+metod：get
 ```
 
 - 请求
 
-```
-{
-    "id":"4c9e3211-3059-4de1-ab9a-d0fc82733c7"
-}
-```
-
 | Field_Name | Type   | Description |
 | ---------- | ------ | ----------- |
-| oderId     | string | 订单ID      |
+| qrCodeID   | string | 二维码ID    |
 
 - 响应
 
@@ -148,8 +136,9 @@ metod：post
 	"signedTx": "xxxx",
 	"extraData": {
         "id": "4c9e3211-3059-4de1-ab9a-d0fc82733c78"，
+        “publickey": "xxx",
+        "ontId": "xxx"，
 	}
-	
 }
 ```
 
@@ -178,13 +167,13 @@ string:"SUCCESS"
 
 ```
 {
-    "id":"4c9e3211-3059-4de1-ab9a-d0fc82733c7"
+    "OrderId":"4c9e3211-3059-4de1-ab9a-d0fc82733c7"
 }
 ```
 
 | Field_Name | Type   | Description |
 | ---------- | ------ | ----------- |
-| oderId     | string | 订单ID      |
+| OderId     | string | 订单ID      |
 
 ##### 删除订单
 
@@ -199,13 +188,13 @@ string:"SUCCESS"
 
 ```
 {
-    "id":"4c9e3211-3059-4de1-ab9a-d0fc82733c7"
+    "OrderId":"4c9e3211-3059-4de1-ab9a-d0fc82733c7"
 }
 ```
 
 | Field_Name | Type   | Description |
 | ---------- | ------ | ----------- |
-| oderId     | string | 订单ID      |
+| OderId     | string | 订单ID      |
 
 ##### 查询订单状态
 
@@ -236,6 +225,42 @@ string:"SUCCESS"
 | ---------- | ------ | ---------------------------------- |
 | result     | string | "1": 完成， ""：处理中， ”0“：失败 |
 
+##### 生成测试键
+
+```
+{
+	/api/v1/order/generateTestKey
+	method:post
+}
+```
+
+- 请求
+
+```
+{
+	"apiId":"xxx"
+}
+```
+
+| Field_Name | Type | Description |
+| ---------- | ---- | ----------- |
+| apiId      | int  | Api ID      |
+
+##### 响应
+
+```
+{
+    "Id": 20,
+    "ApiKey": "xxx",
+    "OrderId" "xxx",
+    "ApiId": 30,
+    "RequestLimit": 40,
+    "UseNum": 50,
+    "OntId": "xxxx",
+    "OderStatus": 1
+}
+```
+
 ##### 查询API页
 
 ```
@@ -257,18 +282,40 @@ string:"SUCCESS"
 ```
 [
 	{
-        "id": 20，
-        "logo": "xxx"，
-        “name":"xxx"，
-        "provider":""，
-        “url":"",
-        "desc":"",
+        "apiId": 20，
+        "coin": "xxx"，
+        "type":"xxx",
+        "icon":"xxx",
+        "title":"xxx",
+        "provider":"yyy"，
+        “apiUrl":"",
+        "price":"",
+        "description":"xxx",
+        "specifications": 30,
         "popularity":20,
         "delay":20,
-        "successrate":20,
-        "invokefreq": 100,
+        "successRate":20,
+        "invokeFrequency": 100,
+        "createTime": "yyy",
 	}，
 	...
+	{
+        "apiId": 20，
+        "coin": "xxx"，
+        "type":"xxx",
+        "icon":"xxx",
+        "title":"xxx",
+        "provider":"yyy"，
+        “apiUrl":"",
+        "price":"",
+        "description":"xxx",
+        "specifications": 30,
+        "popularity":20,
+        "delay":20,
+        "successRate":20,
+        "invokeFrequency": 100,
+        "createTime": "yyy",
+	}
 ]
 ```
 
@@ -291,26 +338,58 @@ string:"SUCCESS"
 
 ```
 {
-	"id":20,
-	"mark":"",
-	"responseparam":"",
-	"responseexample":"",
-	"datadesc":"",
-	"datasource:"",
-	"appscenario":"",
+	"ApiId":20,
+	"Mark":"",
+	"ResponseParam":"",
+	"ResponseExample":"",
+	"DataDesc":"",
+	"DataSource:"",
+	"ApplicationScenario":"",
 	[
-        "detailinfoid":20,
-        "paramname":"xxx",
-        "require":1,
-        "paramtype": "yyy",
-        "note":"xxx"
+		{
+        "ApiDetailInfoId":20,
+        "ParamName":"xxx",
+        "Required":1,
+        "ParamType": "yyy",
+        "Note":"xxx"
+        },
+        ...
 	]，
 	...
 	[
-        "detailinfoid":20，
-        "errorcode":20，
-        "errordesc":"xxx"，
+	 {
+        "ApiDetailInfoId":20，
+        "ErrorCode":20，
+        "Errordesc":"xxx"，
+      },
+      ...
 	],
+	[
+	 {
+        "Id":20，
+        "ApiDetailInfoId":20，
+        "Price":"xxx"，
+        "Amount":30,
+      },
+      ...
+	],
+	{
+        "apiId": 20，
+        "coin": "xxx"，
+        "type":"xxx",
+        "icon":"xxx",
+        "title":"xxx",
+        "provider":"yyy"，
+        “apiUrl":"",
+        "price":"",
+        "description":"xxx",
+        "specifications": 30,
+        "popularity":20,
+        "delay":20,
+        "successRate":20,
+        "invokeFrequency": 100,
+        "createTime": "yyy",
+	}
 }
 ```
 
@@ -336,18 +415,139 @@ string:"SUCCESS"
 - ##### 响应
 
 ```
+[
+	{
+        "apiId": 20，
+        "coin": "xxx"，
+        "type":"xxx",
+        "icon":"xxx",
+        "title":"xxx",
+        "provider":"yyy"，
+        “apiUrl":"",
+        "price":"",
+        "description":"xxx",
+        "specifications": 30,
+        "popularity":20,
+        "delay":20,
+        "successRate":20,
+        "invokeFrequency": 100,
+        "createTime": "yyy",
+	},
+  ...
+]
+```
+
+##### 查询所有hot， new, free api.
+
+- 请求
+
+  ```
+  {
+  	/searchApi
+  	method:get
+  }
+  ```
+
+- 响应
+
+```
+[
+	"newest": [
+		{
+        "apiId": 20，
+        "coin": "xxx"，
+        "type":"xxx",
+        "icon":"xxx",
+        "title":"xxx",
+        "provider":"yyy"，
+        “apiUrl":"",
+        "price":"",
+        "description":"xxx",
+        "specifications": 30,
+        "popularity":20,
+        "delay":20,
+        "successRate":20,
+        "invokeFrequency": 100,
+        "createTime": "yyy",
+		}，
+		....
+	]
+	"hottest":[
+		{
+        "apiId": 20，
+        "coin": "xxx"，
+        "type":"xxx",
+        "icon":"xxx",
+        "title":"xxx",
+        "provider":"yyy"，
+        “apiUrl":"",
+        "price":"",
+        "description":"xxx",
+        "specifications": 30,
+        "popularity":20,
+        "delay":20,
+        "successRate":20,
+        "invokeFrequency": 100,
+        "createTime": "yyy",
+		},
+		...
+	]
+	"free":[
+        {
+        "apiId": 20，
+        "coin": "xxx"，
+        "type":"xxx",
+        "icon":"xxx",
+        "title":"xxx",
+        "provider":"yyy"，
+        “apiUrl":"",
+        "price":"",
+        "description":"xxx",
+        "specifications": 30,
+        "popularity":20,
+        "delay":20,
+        "successRate":20,
+        "invokeFrequency": 100,
+        "createTime": "yyy",
+		},
+	]
+]
+```
+
+##### 根据分类ID查API
+
+##### 请求
+
+```
 {
-    "id": 20，
-    "logo": "xxx"，
-    “name":"xxx"，
-    "provider":""，
-    “url":"",
-    "desc":"",
-    "popularity":20,
-    "delay":20,
-    "successrate":20,
-    "invokefreq": 100,
+	/searchApiByCategory/:categoryId
+	method:get
 }
+```
+
+##### 响应
+
+```
+[
+	{
+        "apiId": 20，
+        "coin": "xxx"，
+        "type":"xxx",
+        "icon":"xxx",
+        "title":"xxx",
+        "provider":"yyy"，
+        “apiUrl":"",
+        "price":"",
+        "description":"xxx",
+        "specifications": 30,
+        "popularity":20,
+        "delay":20,
+        "successRate":20,
+        "invokeFrequency": 100,
+        "createTime": "yyy",
+	}，
+	....
+]
 ```
 
 ##### API接口
