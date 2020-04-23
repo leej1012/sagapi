@@ -13,6 +13,7 @@ type SagaApiDB struct {
 	ApiDB    *ApiDB
 	OrderDB  *OrderDB
 	QrCodeDB *QrCodeDB
+	OtherDB  *OtherDB
 }
 
 func NewSagaApiDB(sagaDBConfig *sagaconfig.Config) (*SagaApiDB, error) {
@@ -35,6 +36,7 @@ func NewSagaApiDB(sagaDBConfig *sagaconfig.Config) (*SagaApiDB, error) {
 		ApiDB:    NewApiDB(db),
 		OrderDB:  NewOrderDB(db),
 		QrCodeDB: NewQrCodeDB(db),
+		OtherDB:  NewOtherDB(db),
 	}, nil
 }
 

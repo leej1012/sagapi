@@ -10,7 +10,7 @@ type OtherDB struct {
 	db *sql.DB
 }
 
-func NewApiKeyDB(db *sql.DB) *OtherDB {
+func NewOtherDB(db *sql.DB) *OtherDB {
 	return &OtherDB{
 		db: db,
 	}
