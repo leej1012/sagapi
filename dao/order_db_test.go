@@ -15,11 +15,13 @@ import (
 var TestDB *SagaApiDB
 
 func TestMain(m *testing.M) {
-	fmt.Println("begin")
+	fmt.Println("begin test db.")
 	var err error
-	TestDB, err = NewSagaApiDB()
+	sagaDBConfig := config.DefSagaConfig
+	sagaDBConfig.DbConfig = config.DefDBConfigMap[config.NETWORK_ID_TRAVIS_NET]
+	TestDB, err = NewSagaApiDB(sagaDBConfig)
 	if err != nil {
-		return
+		panic(err)
 	}
 	m.Run()
 	fmt.Println("end")
