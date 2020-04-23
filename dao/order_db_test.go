@@ -67,14 +67,27 @@ func TestOrderDB_InsertOrder(t *testing.T) {
 }
 
 func TestApiDB_InsertApiKey(t *testing.T) {
+	orderId := "145e89f6-850e-44a7-be3e-9224fd066858"
 	key := &tables.APIKey{
 		ApiId:        1,
-		OrderId:      "145e89f6-850e-44a7-be3e-9224fd066858",
+		OrderId:      orderId,
 		ApiKey:       "apikey",
 		RequestLimit: 2,
 		UsedNum:      1,
+		OntId:        "did:ont:APe4yT5B6KnvR7LenkZD6eQGhG52Qrdjuo",
 	}
+
 	err := TestDB.ApiDB.InsertApiKey(key)
+	assert.NotNil(t, err)
+
+	ord := &tables.Order{
+		ApiId:   1,
+		OrderId: orderId,
+		OntId:   "did:ont:APe4yT5B6KnvR7LenkZD6eQGhG52Qrdjuo",
+	}
+	err = TestDB.OrderDB.InsertOrder(ord)
+	assert.Nil(t, err)
+	err = TestDB.ApiDB.InsertApiKey(key)
 	assert.Nil(t, err)
 }
 
@@ -112,15 +125,13 @@ func TestSagaDB_SearchApi(t *testing.T) {
 	assert.Nil(t, err)
 	fmt.Println(infos)
 	info3, err := TestDB.ApiDB.QueryApiBasicInfoByApiId(100)
-	assert.Nil(t, err)
+	assert.NotNil(t, err)
 	fmt.Println(info3)
-	TestDB.Close()
 }
 
 func TestSagaDB_QueryOrderStatusByOrderId(t *testing.T) {
-	status, err := TestDB.OrderDB.QueryOrderByOrderId("1")
-	assert.Nil(t, err)
-	fmt.Println("status:", status)
+	_, err := TestDB.OrderDB.QueryOrderByOrderId("1")
+	assert.NotNil(t, err)
 }
 
 func TestOrderDB_QueryOrderByPage(t *testing.T) {
