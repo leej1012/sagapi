@@ -3,18 +3,19 @@ package dao
 import (
 	"context"
 	"database/sql"
-	"github.com/ontio/sagapi/config"
+	"github.com/ontio/sagapi/sagaconfig"
 	"time"
 )
 
 var DefSagaApiDB *SagaApiDB
 
 type SagaApiDB struct {
-	ApiDB   *ApiDB
-	OrderDB *OrderDB
+	ApiDB    *ApiDB
+	OrderDB  *OrderDB
+	QrCodeDB *QrCodeDB
 }
 
-func NewSagaApiDB(sagaDBConfig *config.Config) (*SagaApiDB, error) {
+func NewSagaApiDB(sagaDBConfig *sagaconfig.Config) (*SagaApiDB, error) {
 	db, dberr := sql.Open("mysql",
 		sagaDBConfig.DbConfig.ProjectDBUser+
 			":"+sagaDBConfig.DbConfig.ProjectDBPassword+
@@ -31,8 +32,9 @@ func NewSagaApiDB(sagaDBConfig *config.Config) (*SagaApiDB, error) {
 		return nil, err
 	}
 	return &SagaApiDB{
-		ApiDB:   NewApiDB(db),
-		OrderDB: NewOrderDB(db),
+		ApiDB:    NewApiDB(db),
+		OrderDB:  NewOrderDB(db),
+		QrCodeDB: NewQrCodeDB(db),
 	}, nil
 }
 
