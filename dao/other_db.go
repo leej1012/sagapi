@@ -6,17 +6,17 @@ import (
 	"github.com/ontio/sagapi/sagaconfig"
 )
 
-type ApiKeyDB struct {
+type OtherDB struct {
 	db *sql.DB
 }
 
-func NewApiKeyDB(db *sql.DB) *ApiKeyDB {
-	return &ApiKeyDB{
+func NewApiKeyDB(db *sql.DB) *OtherDB {
+	return &OtherDB{
 		db: db,
 	}
 }
 
-func (this *ApiKeyDB) UpdateOrderStatusInApiKey(orderId string, status sagaconfig.OrderStatus) error {
+func (this *OtherDB) TblApiKeyOfUpdateOrderStatus(orderId string, status sagaconfig.OrderStatus) error {
 	strSql := "update tbl_api_key set OrderStatus=? where OrderId=?"
 	stmt, err := this.db.Prepare(strSql)
 	if stmt != nil {
