@@ -163,6 +163,7 @@ create table tbl_api_test_key (
   UsedNum int(11) not null default 0,
   OntId varchar(50) not null default '',
   PRIMARY KEY (Id)
+  foreign key(ApiId) references tbl_api_basic_info(ApiId),
 ) default charset=utf8;
 
 CREATE TABLE `tbl_qr_code` (
