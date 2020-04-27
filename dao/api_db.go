@@ -5,6 +5,7 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ontio/sagapi/common"
+	"github.com/ontio/sagapi/models"
 	"github.com/ontio/sagapi/models/tables"
 	"github.com/ontio/sagapi/sagaconfig"
 	"strings"
@@ -609,8 +610,16 @@ func (this *ApiDB) QueryApiTestKeyByOntIdAndApiId(ontId string, apiId int) (*tab
 	return nil, fmt.Errorf("apikey not found")
 }
 
-func (this *ApiDB) QueryApiTestKeyByApiTestKey(apiTestKey string) (*tables.APIKey, error) {
-	strSql := "select ApiId, OntId, RequestLimit, UsedNum from tbl_api_test_key where ApiKey=?"
+func (this *ApiDB) QueryApiKeyAndInvokeFreByApiKey(apiKey string) (*models.ApiKeyInvokeFre, error) {
+	var strSql string
+	if common.IsTestKey(apiKey) {
+		strSql = `select k.ApiId, k.OntId, k.RequestLimit, k.UsedNum,i.InvokeFrequency from tbl_api_test_key k,
+tbl_api_basic_info i where k.ApiKey=? and i.ApiId=k.ApiId`
+	} else {
+		strSql = `select k.ApiId, k.OntId, k.RequestLimit, k.UsedNum,i.InvokeFrequency from tbl_api_key k,
+tbl_api_basic_info i where k.ApiKey=? and i.ApiId=k.ApiId`
+	}
+
 	stmt, err := this.db.Prepare(strSql)
 	if stmt != nil {
 		defer stmt.Close()
@@ -618,7 +627,7 @@ func (this *ApiDB) QueryApiTestKeyByApiTestKey(apiTestKey string) (*tables.APIKe
 	if err != nil {
 		return nil, err
 	}
-	rows, err := stmt.Query(apiTestKey)
+	rows, err := stmt.Query(apiKey)
 	if rows != nil {
 		defer rows.Close()
 	}
@@ -627,15 +636,15 @@ func (this *ApiDB) QueryApiTestKeyByApiTestKey(apiTestKey string) (*tables.APIKe
 	}
 	for rows.Next() {
 		var ontId string
-		var apiId, limit, usedNum int
-		if err = rows.Scan(&apiId, &ontId, &limit, &usedNum); err != nil {
+		var apiId, limit, usedNum, invokeFre int
+		if err = rows.Scan(&apiId, &ontId, &limit, &usedNum, &invokeFre); err != nil {
 			return nil, err
 		}
-		return &tables.APIKey{
-			ApiKey:       apiTestKey,
+		return &models.ApiKeyInvokeFre{
+			ApiKey:       apiKey,
 			ApiId:        apiId,
 			RequestLimit: limit,
-			UsedNum:      usedNum,
+			UsedNum:      int32(usedNum),
 			OntId:        ontId,
 		}, nil
 	}
