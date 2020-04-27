@@ -19,50 +19,58 @@ var (
 
 type Nasa struct {
 	apiKeyInvokeFreCache *sync.Map //apikey -> ApiKeyInvokeFre
-	lock                 *sync.RWMutex
+	freqlock             *sync.Mutex
 }
 
 func NewNasa() *Nasa {
 	return &Nasa{
 		apiKeyInvokeFreCache: new(sync.Map),
-		lock:                 new(sync.RWMutex),
+		freqlock:             new(sync.Mutex),
 	}
 }
 
 func (this *Nasa) beforeCheckApiKey(apiKey string) (*models.ApiKeyInvokeFre, error) {
-
+	this.freqlock.Lock()
+	defer this.freqlock.Unlock()
 	key, err := this.getApiKeyInvokeFre(apiKey)
 	if err != nil {
 		return nil, err
 	}
 
+	if key.UsedNum >= int32(key.RequestLimit) {
+		return nil, fmt.Errorf("apikey: %s, useNum: %d, limit:%d", apiKey, key.UsedNum, key.RequestLimit)
+	}
+
+	key.UsedNum += 1
+	key.InvokeFre += 1
+
 	return key, nil
 }
 
-func (this *Nasa) Apod(apiKey string) ([]byte, error) {
-	this.lock.Lock()
+func (this *Nasa) Apod(apiKey string) (res []byte, e error) {
 	key, err := this.beforeCheckApiKey(apiKey)
 	if err != nil {
 		return nil, err
 	}
 
-	num := atomic.AddInt32(&key.UsedNum, 1)
-	if num > int32(key.RequestLimit) {
-		atomic.AddInt32(&key.UsedNum, -1)
-		return nil, fmt.Errorf("apikey: %s, useNum: %d, limit:%d", apiKey, key.UsedNum, key.RequestLimit)
+	defer func() {
+		if e != nil {
+			atomic.AddInt32(&key.UsedNum, -1)
+			atomic.AddInt32(&key.InvokeFre, -1)
+		}
+	}()
+
+	url := fmt.Sprintf(apod, sagaconfig.DefSagaConfig.NASAAPIKey)
+	res, e = http.DefClient.Get(url)
+	if e != nil {
+		return nil, err
 	}
 
-	//TODO
 	err = this.updateApiKeyInvokeFre(key)
 	if err != nil {
 		return nil, err
 	}
-	this.lock.Unlock()
-	url := fmt.Sprintf(apod, sagaconfig.DefSagaConfig.NASAAPIKey)
-	res, err := http.DefClient.Get(url)
-	if err != nil {
-		return nil, err
-	}
+
 	return res, nil
 }
 
@@ -75,6 +83,7 @@ func (this *Nasa) Feed(startDate, endDate string, apiKey string) (res []byte, e 
 	defer func() {
 		if e != nil {
 			atomic.AddInt32(&key.UsedNum, -1)
+			atomic.AddInt32(&key.InvokeFre, -1)
 		}
 	}()
 
@@ -83,7 +92,6 @@ func (this *Nasa) Feed(startDate, endDate string, apiKey string) (res []byte, e 
 	if e != nil {
 		return nil, err
 	}
-	//TODO
 	e = this.updateApiKeyInvokeFre(key)
 	if err != nil {
 		return nil, err
