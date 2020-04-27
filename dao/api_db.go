@@ -21,6 +21,10 @@ func NewApiDB(db *sql.DB) *ApiDB {
 	}
 }
 
+func (this *ApiDB) DB() *sql.DB {
+	return this.db
+}
+
 func (this *ApiDB) InsertApiBasicInfo(infos []*tables.ApiBasicInfo) error {
 	if len(infos) == 0 {
 		return nil
@@ -651,23 +655,37 @@ tbl_api_basic_info i where k.ApiKey=? and i.ApiId=k.ApiId`
 	return nil, fmt.Errorf("not found")
 }
 
-func (this *ApiDB) UpdateApiKeyInvokeFre(apiKey string, usedNum, apiId, invokeFre int) error {
+func (this *ApiDB) UpdateApiKeyInvokeFre(apiKey string, usedNum, apiId, invokeFre int, tx *sql.Tx) error {
 	var strSql string
 	if common.IsTestKey(apiKey) {
 		strSql = "update tbl_api_test_key k,tbl_api_basic_info i set k.UsedNum=?,i.InvokeFrequency=? where k.ApiKey=? and i.ApiId=?"
 	} else {
 		strSql = "update tbl_api_key k,tbl_api_basic_info i set k.UsedNum=?,i.InvokeFrequency=? where k.ApiKey=? and i.ApiId=?"
 	}
-	stmt, err := this.db.Prepare(strSql)
-	if stmt != nil {
-		defer stmt.Close()
-	}
-	if err != nil {
+
+	if tx != nil {
+		stmt, err := tx.Prepare(strSql)
+		if stmt != nil {
+			defer stmt.Close()
+		}
+		if err != nil {
+			return err
+		}
+		_, err = stmt.Exec(usedNum, invokeFre, apiKey, apiId)
+		return err
+	} else {
+		stmt, err := this.db.Prepare(strSql)
+		if stmt != nil {
+			defer stmt.Close()
+		}
+		if err != nil {
+			return err
+		}
+		_, err = stmt.Exec(usedNum, invokeFre, apiKey, apiId)
 		return err
 	}
-	_, err = stmt.Exec(usedNum, invokeFre, apiKey, apiId)
-	return err
 }
+
 func (this *ApiDB) QueryApiKeyByApiKey(apiKey string) (*tables.APIKey, error) {
 	return this.queryApiKey(apiKey, "")
 }
