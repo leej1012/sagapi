@@ -24,22 +24,31 @@ type ApiKeyInvokeFre struct {
 
 type Nasa struct {
 	apiKeyInvokeFreCache *sync.Map //apikey -> ApiKeyInvokeFre
+	freqlock             *sync.Mutex
 }
 
 func NewNasa() *Nasa {
 	return &Nasa{
 		apiKeyInvokeFreCache: new(sync.Map),
+		freqlock:             new(sync.Mutex),
 	}
 }
 
 func (this *Nasa) beforeCheckApiKey(apiKey string) (*ApiKeyInvokeFre, error) {
+	this.freqlock.Lock()
+	defer this.freqlock.Unlock()
 	key, err := this.getApiKeyInvokeFre(apiKey)
 	if err != nil {
 		return nil, err
 	}
+
 	if key.ApiKey.UsedNum >= key.ApiKey.RequestLimit {
 		return nil, fmt.Errorf("apikey: %s, useNum: %d, limit:%d", apiKey, key.ApiKey.UsedNum, key.ApiKey.RequestLimit)
 	}
+
+	key.ApiKey.UsedNum += 1
+	key.InvokeFre += 1
+
 	return key, nil
 }
 
@@ -65,10 +74,12 @@ func (this *Nasa) Apod(apiKey string) (string, error) {
 	url := fmt.Sprintf(apod, sagaconfig.DefSagaConfig.NASAAPIKey)
 	res, err := http.DefClient.Get(url)
 	if err != nil {
+		key.ApiKey.UsedNum -= 1
+		key.InvokeFre -= 1
 		return "", err
 	}
-	//TODO
-	err = this.updateApiKeyInvokeFre(key)
+
+	err = dao.DefSagaApiDB.ApiDB.UpdateApiKeyInvokeFre(key.ApiKey.ApiKey, key.ApiKey.UsedNum, key.ApiKey.ApiId, key.InvokeFre)
 	if err != nil {
 		return "", err
 	}
@@ -83,13 +94,16 @@ func (this *Nasa) Feed(startDate, endDate string, apiKey string) (string, error)
 	url := fmt.Sprintf(feed, startDate, endDate, sagaconfig.DefSagaConfig.NASAAPIKey)
 	res, err := http.DefClient.Get(url)
 	if err != nil {
+		key.ApiKey.UsedNum -= 1
+		key.InvokeFre -= 1
 		return "", err
 	}
-	//TODO
-	err = this.updateApiKeyInvokeFre(key)
+
+	err = dao.DefSagaApiDB.ApiDB.UpdateApiKeyInvokeFre(key.ApiKey.ApiKey, key.ApiKey.UsedNum, key.ApiKey.ApiId, key.InvokeFre)
 	if err != nil {
 		return "", err
 	}
+
 	return string(res), nil
 }
 
@@ -110,18 +124,15 @@ func (this *Nasa) getApiKeyInvokeFre(apiKey string) (*ApiKeyInvokeFre, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ApiKeyInvokeFre{
+
+		newfreq := &ApiKeyInvokeFre{
 			ApiKey:    key,
 			InvokeFre: invokeFre,
-		}, nil
+		}
+
+		this.apiKeyInvokeFreCache.Store(key.ApiKey, newfreq)
+		return newfreq, nil
 	} else {
 		return keyIn.(*ApiKeyInvokeFre), nil
 	}
-}
-
-func (this *Nasa) updateApiKeyInvokeFre(key *ApiKeyInvokeFre) error {
-	key.ApiKey.UsedNum += 1
-	key.InvokeFre += 1
-	this.apiKeyInvokeFreCache.Store(key.ApiKey, key)
-	return dao.DefSagaApiDB.ApiDB.UpdateApiKeyInvokeFre(key.ApiKey.ApiKey, key.ApiKey.UsedNum, key.ApiKey.ApiId, key.InvokeFre)
 }

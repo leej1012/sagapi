@@ -659,6 +659,7 @@ func (this *ApiDB) UpdateApiKeyInvokeFre(apiKey string, usedNum, apiId, invokeFr
 	_, err = stmt.Exec(usedNum, invokeFre, apiKey, apiId)
 	return err
 }
+
 func (this *ApiDB) QueryApiKeyByApiKey(apiKey string) (*tables.APIKey, error) {
 	return this.queryApiKey(apiKey, "")
 }
