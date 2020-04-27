@@ -99,6 +99,7 @@ func (this *Nasa) Feed(startDate, endDate string, apiKey string) (res []byte, e 
 	if e != nil {
 		atomic.AddInt32(&key.UsedNum, -1)
 		atomic.AddInt32(&key.InvokeFre, -1)
+		tx.Rollback()
 		return nil, err
 	}
 
