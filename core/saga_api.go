@@ -135,6 +135,9 @@ func (this *SagaApi) QueryApiDetailInfoByApiId(apiId int) (*common.ApiDetailResp
 }
 
 func (this *SagaApi) SearchApiIdByCategoryId(categoryId int) ([]*tables.ApiBasicInfo, error) {
+	if categoryId == sagaconfig.CategoryAll {
+		return dao.DefSagaApiDB.ApiDB.QueryALLApiBasicInfo()
+	}
 
 	return dao.DefSagaApiDB.ApiDB.QueryApiBasicInfoByCategoryId(categoryId)
 }

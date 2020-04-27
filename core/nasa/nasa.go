@@ -1,7 +1,6 @@
 package nasa
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"github.com/ontio/sagapi/core/http"
@@ -21,16 +20,36 @@ var (
 type Nasa struct {
 	apiKeyInvokeFreCache *sync.Map //apikey -> ApiKeyInvokeFre
 	freqlock             *sync.Mutex
+	updateFreq           chan string
 }
 
 func NewNasa() *Nasa {
-	return &Nasa{
+	res := &Nasa{
 		apiKeyInvokeFreCache: new(sync.Map),
 		freqlock:             new(sync.Mutex),
+		updateFreq:           make(chan string, 20),
+	}
+
+	go res.UpdateFreqDataBase()
+	return res
+}
+
+func (this *Nasa) UpdateFreqDataBase() {
+	for {
+		select {
+		case apiKey := <-this.updateFreq:
+			keyIn, ok := this.apiKeyInvokeFreCache.Load(apiKey)
+			if !ok {
+				continue
+			}
+
+			key := keyIn.(*models.ApiKeyInvokeFre)
+			this.updateApiKeyInvokeFre(key)
+		}
 	}
 }
 
-func (this *Nasa) beforeCheckApiKey(apiKey string, tx *sql.Tx) (*models.ApiKeyInvokeFre, error) {
+func (this *Nasa) beforeCheckApiKey(apiKey string) (*models.ApiKeyInvokeFre, error) {
 	this.freqlock.Lock()
 	defer this.freqlock.Unlock()
 	key, err := this.getApiKeyInvokeFre(apiKey)
@@ -42,11 +61,6 @@ func (this *Nasa) beforeCheckApiKey(apiKey string, tx *sql.Tx) (*models.ApiKeyIn
 		return nil, fmt.Errorf("apikey: %s, useNum: %d, limit:%d", apiKey, key.UsedNum, key.RequestLimit)
 	}
 
-	err = dao.DefSagaApiDB.ApiDB.UpdateApiKeyInvokeFre(key.ApiKey, int(key.UsedNum), key.ApiId, int(key.InvokeFre), tx)
-	if err != nil {
-		return nil, err
-	}
-
 	key.UsedNum += 1
 	key.InvokeFre += 1
 
@@ -54,14 +68,8 @@ func (this *Nasa) beforeCheckApiKey(apiKey string, tx *sql.Tx) (*models.ApiKeyIn
 }
 
 func (this *Nasa) Apod(apiKey string) (res []byte, e error) {
-	tx, err := dao.DefSagaApiDB.ApiDB.DB().Begin()
+	key, err := this.beforeCheckApiKey(apiKey)
 	if err != nil {
-		return nil, err
-	}
-
-	key, err := this.beforeCheckApiKey(apiKey, tx)
-	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -70,27 +78,17 @@ func (this *Nasa) Apod(apiKey string) (res []byte, e error) {
 	if e != nil {
 		atomic.AddInt32(&key.UsedNum, -1)
 		atomic.AddInt32(&key.InvokeFre, -1)
-		tx.Rollback()
 		return nil, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
+	this.updateFreq <- apiKey
 
 	return res, nil
 }
 
 func (this *Nasa) Feed(startDate, endDate string, apiKey string) (res []byte, e error) {
-	tx, err := dao.DefSagaApiDB.ApiDB.DB().Begin()
+	key, err := this.beforeCheckApiKey(apiKey)
 	if err != nil {
-		return nil, err
-	}
-
-	key, err := this.beforeCheckApiKey(apiKey, tx)
-	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
@@ -99,14 +97,10 @@ func (this *Nasa) Feed(startDate, endDate string, apiKey string) (res []byte, e 
 	if e != nil {
 		atomic.AddInt32(&key.UsedNum, -1)
 		atomic.AddInt32(&key.InvokeFre, -1)
-		tx.Rollback()
 		return nil, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		return nil, err
-	}
+	this.updateFreq <- apiKey
 
 	return
 }
@@ -139,6 +133,6 @@ func (this *Nasa) getApiKeyInvokeFre(apiKey string) (*models.ApiKeyInvokeFre, er
 	}
 }
 
-func (this *Nasa) updateApiKeyInvokeFre(key *models.ApiKeyInvokeFre, tx *sql.Tx) error {
-	return dao.DefSagaApiDB.ApiDB.UpdateApiKeyInvokeFre(key.ApiKey, int(key.UsedNum), key.ApiId, int(key.InvokeFre), tx)
+func (this *Nasa) updateApiKeyInvokeFre(key *models.ApiKeyInvokeFre) error {
+	return dao.DefSagaApiDB.ApiDB.UpdateApiKeyInvokeFre(key.ApiKey, int(key.UsedNum), key.ApiId, int(key.InvokeFre))
 }

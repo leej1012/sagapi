@@ -86,6 +86,9 @@ func (this *ApiDB) QueryNewestApiBasicInfo() ([]*tables.ApiBasicInfo, error) {
 func (this *ApiDB) QueryFreeApiBasicInfo() ([]*tables.ApiBasicInfo, error) {
 	return this.queryApiBasicInfo(false, false, true)
 }
+func (this *ApiDB) QueryALLApiBasicInfo() ([]*tables.ApiBasicInfo, error) {
+	return this.queryApiBasicInfo(false, false, false)
+}
 func (this *ApiDB) queryApiBasicInfo(newest, hottest, free bool) ([]*tables.ApiBasicInfo, error) {
 	var strSql string
 	if newest {
@@ -97,6 +100,9 @@ InvokeFrequency,CreateTime from tbl_api_basic_info order by CreateTime limit ?`
 	} else if free {
 		strSql = `select ApiId, Icon, Title, ApiProvider, ApiUrl, Price, ApiDesc,Specifications,Popularity,Delay,SuccessRate,
 InvokeFrequency,CreateTime from tbl_api_basic_info where Price='0' limit ?`
+	} else {
+		strSql = `select ApiId, Icon, Title, ApiProvider, ApiUrl, Price, ApiDesc,Specifications,Popularity,Delay,SuccessRate,
+InvokeFrequency,CreateTime from tbl_api_basic_info limit ?`
 	}
 
 	stmt, err := this.db.Prepare(strSql)
@@ -655,7 +661,7 @@ tbl_api_basic_info i where k.ApiKey=? and i.ApiId=k.ApiId`
 	return nil, fmt.Errorf("not found")
 }
 
-func (this *ApiDB) UpdateApiKeyInvokeFre(apiKey string, usedNum, apiId, invokeFre int, tx *sql.Tx) error {
+func (this *ApiDB) UpdateApiKeyInvokeFre(apiKey string, usedNum, apiId, invokeFre int) error {
 	var strSql string
 	if common.IsTestKey(apiKey) {
 		strSql = "update tbl_api_test_key k,tbl_api_basic_info i set k.UsedNum=?,i.InvokeFrequency=? where k.ApiKey=? and i.ApiId=?"
@@ -663,27 +669,15 @@ func (this *ApiDB) UpdateApiKeyInvokeFre(apiKey string, usedNum, apiId, invokeFr
 		strSql = "update tbl_api_key k,tbl_api_basic_info i set k.UsedNum=?,i.InvokeFrequency=? where k.ApiKey=? and i.ApiId=?"
 	}
 
-	if tx != nil {
-		stmt, err := tx.Prepare(strSql)
-		if stmt != nil {
-			defer stmt.Close()
-		}
-		if err != nil {
-			return err
-		}
-		_, err = stmt.Exec(usedNum, invokeFre, apiKey, apiId)
-		return err
-	} else {
-		stmt, err := this.db.Prepare(strSql)
-		if stmt != nil {
-			defer stmt.Close()
-		}
-		if err != nil {
-			return err
-		}
-		_, err = stmt.Exec(usedNum, invokeFre, apiKey, apiId)
+	stmt, err := this.db.Prepare(strSql)
+	if stmt != nil {
+		defer stmt.Close()
+	}
+	if err != nil {
 		return err
 	}
+	_, err = stmt.Exec(usedNum, invokeFre, apiKey, apiId)
+	return err
 }
 
 func (this *ApiDB) QueryApiKeyByApiKey(apiKey string) (*tables.APIKey, error) {
