@@ -61,6 +61,7 @@ func startSaga(ctx *cli.Context) {
 		return
 	}
 	core.DefSagaApi = core.NewSagaApi()
+	log.Infof("config: %v\n", sagaconfig.DefSagaConfig)
 	log.Info("ONTAuthScanProtocol:", sagaconfig.DefSagaConfig.ONTAuthScanProtocol)
 	log.Info("QrCodeCallback:", sagaconfig.DefSagaConfig.QrCodeCallback)
 	startServer()
@@ -68,7 +69,7 @@ func startSaga(ctx *cli.Context) {
 }
 
 func initAccount() error {
-	pri, _ := common.HexToBytes(sagaconfig.OntIdPrivate)
+	pri, _ := common.HexToBytes(sagaconfig.DefSagaConfig.OntIdPrivate)
 	acc, err := ontology_go_sdk.NewAccountFromPrivateKey(pri, signature.SHA256withECDSA)
 	if err != nil {
 		return err
@@ -102,6 +103,7 @@ func initDB(ctx *cli.Context) error {
 	} else {
 		sagaconfig.DefSagaConfig.NetType = sagaconfig.TestNet
 	}
+
 	var dbConfig = *sagaconfig.DefSagaConfig.DbConfig
 	db, err := dao.NewSagaApiDB(&dbConfig)
 	if err != nil {
