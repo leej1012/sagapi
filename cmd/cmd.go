@@ -44,6 +44,8 @@ func SetOntologyConfig(ctx *cli.Context) error {
 		sagaconfig.DefSagaConfig.NetType = sagaconfig.TestNet
 	case sagaconfig.NETWORK_ID_SOLO_NET:
 		sdk.NewRpcClient().SetAddress(sagaconfig.ONT_SOLO_NET)
+	default:
+		return fmt.Errorf("error network id %d", sagaconfig.DefSagaConfig.NetWorkId)
 	}
 
 	sagaconfig.DefSagaConfig.OntSdk = sdk
