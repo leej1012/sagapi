@@ -23,6 +23,7 @@ type Config struct {
 	QrCodeCallback      string    `json:"qrcode_callback"`
 	NASAAPIKey          string    `json:"nasa_api_key"`
 	OntIdAccount        *ontology_go_sdk.Account
+	NetType             string `json:"net_type"`
 }
 
 type DBConfig struct {

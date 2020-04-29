@@ -5,7 +5,6 @@ import (
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ontio/sagapi/common"
-	"github.com/ontio/sagapi/models"
 	"github.com/ontio/sagapi/models/tables"
 	"github.com/ontio/sagapi/sagaconfig"
 	"strings"
@@ -131,7 +130,7 @@ InvokeFrequency,CreateTime from tbl_api_basic_info limit ?`
 	return res, nil
 }
 
-func (this *ApiDB) QueryInvokeFreByApiId(apiId int) (int, error) {
+func (this *ApiDB) QueryInvokeFreByApiId(apiId int) (int32, error) {
 	strSql := `select InvokeFrequency from tbl_api_basic_info where ApiId =?`
 	stmt, err := this.db.Prepare(strSql)
 	if stmt != nil {
@@ -148,7 +147,7 @@ func (this *ApiDB) QueryInvokeFreByApiId(apiId int) (int, error) {
 		return 0, err
 	}
 	for rows.Next() {
-		var invokeFrequency int
+		var invokeFrequency int32
 		if err = rows.Scan(&invokeFrequency); err != nil {
 			return 0, err
 		}
@@ -476,7 +475,8 @@ func (this *ApiDB) querySpecificationsById(strSql string, id int) ([]*tables.Spe
 	}
 	res := make([]*tables.Specifications, 0)
 	for rows.Next() {
-		var amount, specId int
+		var specId int
+		var amount int32
 		var price string
 		if err = rows.Scan(&specId, &price, &amount); err != nil {
 			return nil, err
@@ -603,7 +603,7 @@ func (this *ApiDB) QueryApiTestKeyByOntIdAndApiId(ontId string, apiId int) (*tab
 	}
 	for rows.Next() {
 		var apiKey string
-		var limit, usedNum int
+		var limit, usedNum int32
 		if err = rows.Scan(&apiKey, &limit, &usedNum); err != nil {
 			return nil, err
 		}
@@ -618,48 +618,7 @@ func (this *ApiDB) QueryApiTestKeyByOntIdAndApiId(ontId string, apiId int) (*tab
 	return nil, fmt.Errorf("apikey not found")
 }
 
-func (this *ApiDB) QueryApiKeyAndInvokeFreByApiKey(apiKey string) (*models.ApiKeyInvokeFre, error) {
-	var strSql string
-	if common.IsTestKey(apiKey) {
-		strSql = `select k.ApiId, k.OntId, k.RequestLimit, k.UsedNum,i.InvokeFrequency from tbl_api_test_key k,
-tbl_api_basic_info i where k.ApiKey=? and i.ApiId=k.ApiId`
-	} else {
-		strSql = `select k.ApiId, k.OntId, k.RequestLimit, k.UsedNum,i.InvokeFrequency from tbl_api_key k,
-tbl_api_basic_info i where k.ApiKey=? and i.ApiId=k.ApiId`
-	}
-
-	stmt, err := this.db.Prepare(strSql)
-	if stmt != nil {
-		defer stmt.Close()
-	}
-	if err != nil {
-		return nil, err
-	}
-	rows, err := stmt.Query(apiKey)
-	if rows != nil {
-		defer rows.Close()
-	}
-	if err != nil {
-		return nil, err
-	}
-	for rows.Next() {
-		var ontId string
-		var apiId, limit, usedNum, invokeFre int
-		if err = rows.Scan(&apiId, &ontId, &limit, &usedNum, &invokeFre); err != nil {
-			return nil, err
-		}
-		return &models.ApiKeyInvokeFre{
-			ApiKey:       apiKey,
-			ApiId:        apiId,
-			RequestLimit: limit,
-			UsedNum:      int32(usedNum),
-			OntId:        ontId,
-		}, nil
-	}
-	return nil, fmt.Errorf("not found")
-}
-
-func (this *ApiDB) UpdateApiKeyInvokeFre(apiKey string, usedNum, apiId, invokeFre int) error {
+func (this *ApiDB) UpdateApiKeyInvokeFre(apiKey string, apiId int, usedNum, invokeFre int32) error {
 	var strSql string
 	if common.IsTestKey(apiKey) {
 		strSql = "update tbl_api_test_key k,tbl_api_basic_info i set k.UsedNum=?,i.InvokeFrequency=? where k.ApiKey=? and i.ApiId=?"
@@ -711,7 +670,8 @@ func (this *ApiDB) queryApiKey(key, orderId string) (*tables.APIKey, error) {
 	}
 	for rows.Next() {
 		var ontId, orderId, apiKey string
-		var apiId, limit, usedNum int
+		var limit, usedNum int32
+		var apiId int
 		if err = rows.Scan(&apiKey, &orderId, &apiId, &limit, &usedNum, &ontId); err != nil {
 			return nil, err
 		}

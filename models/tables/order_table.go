@@ -26,8 +26,8 @@ type APIKey struct {
 	ApiKey       string                 `json:"apiKey"`
 	OrderId      string                 `json:"orderId"`
 	ApiId        int                    `json:"apiId"`
-	RequestLimit int                    `json:"requestLimit"`
-	UsedNum      int                    `json:"usedNum"`
+	RequestLimit int32                    `json:"requestLimit"`
+	UsedNum      int32                    `json:"usedNum"`
 	OntId        string                 `json:"ontId"`
 	OrderStatus  sagaconfig.OrderStatus `json:"orderStatus"`
 }
