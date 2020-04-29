@@ -38,8 +38,10 @@ func SetOntologyConfig(ctx *cli.Context) error {
 	switch sagaconfig.DefSagaConfig.NetWorkId {
 	case sagaconfig.NETWORK_ID_MAIN_NET:
 		sdk.NewRpcClient().SetAddress(sagaconfig.ONT_MAIN_NET)
+		sagaconfig.DefSagaConfig.NetType = sagaconfig.MainNet
 	case sagaconfig.NETWORK_ID_POLARIS_NET:
 		sdk.NewRpcClient().SetAddress(sagaconfig.ONT_TEST_NET)
+		sagaconfig.DefSagaConfig.NetType = sagaconfig.TestNet
 	case sagaconfig.NETWORK_ID_SOLO_NET:
 		sdk.NewRpcClient().SetAddress(sagaconfig.ONT_SOLO_NET)
 	}
